@@ -1,1 +1,7 @@
-Flask
+flask
+prometheus-flask-exporter
+python-json-logger
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-instrumentation-flask
+opentelemetry-exporter-otlp
