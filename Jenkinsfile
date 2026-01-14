@@ -1,5 +1,9 @@
 pipeline {
-    agent any
+    agent {
+    docker {
+      image 'python:3.11-slim'
+    }
+  }
 
     environment {
         IMGNAME = 'python_link_shortener'
