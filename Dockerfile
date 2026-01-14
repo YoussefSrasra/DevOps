@@ -7,7 +7,8 @@ COPY ./ /app/
 
 WORKDIR /app/
 
-RUN python3 -m pip install flask --break-system-packages
+RUN python3 -m pip install --upgrade pip \
+    && python3 -m pip install -r requirements.txt
 
 EXPOSE 5000
 
