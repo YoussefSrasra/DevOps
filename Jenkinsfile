@@ -1,9 +1,5 @@
 pipeline {
-    agent {
-    docker {
-      image 'python:3.11-slim'
-    }
-  }
+    agent any
     environment {
         IMGNAME = 'python_link_shortener'
     }
@@ -16,8 +12,17 @@ pipeline {
         }
         stage('Install dependencies') {
             steps {
-                sh 'python3 -m pip install --upgrade pip'
-                sh 'pip3 install -r requirements.txt pytest flake8 bandit'
+                sh '''
+                if ! command -v python3 >/dev/null 2>&1; then 
+                  echo "Python3 not found, installing...";
+                  if [ -x "$(command -v apt-get)" ]; then sudo apt-get update && sudo apt-get install -y python3 python3-pip;
+                  elif [ -x "$(command -v apk)" ]; then sudo apk add --no-cache python3 py3-pip;
+                  elif [ -x "$(command -v yum)" ]; then sudo yum install -y python3 python3-pip;
+                  else echo "No supported package manager found!"; exit 1; fi;
+                fi
+                python3 -m pip install --upgrade pip
+                pip3 install -r requirements.txt pytest flake8 bandit
+                '''
             }
         }
         stage('Test') {
