@@ -43,5 +43,29 @@ pipeline {
                 bat 'docker build -t %IMGNAME%:latest .'
             }
         }
+
+        stage('DAST Scan (OWASP ZAP)') {
+            steps {
+                script {
+                    // We use bat for Windows Jenkins
+                    // -t is the target URL (your K8s NodePort)
+                    // -r generates the HTML report
+                    bat """
+                    docker run --rm ^
+                      -v "%cd%":/zap/wrk/:rw ^
+                      -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py ^
+                      -t http://host.docker.internal:30001 ^
+                      -r zap_report.html
+                    """
+                }
+            }
+            post {
+                always {
+                    // This makes the report available to download in the Jenkins UI
+                    archiveArtifacts artifacts: 'zap_report.html', fingerprint: true
+                }
+            }
+        }
+
     }
 }
