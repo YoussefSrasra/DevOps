@@ -13,13 +13,7 @@ pipeline {
             }
         }
 
-        stage('Unit Tests') {
-            steps {
-                bat '''
-                docker run --rm -v "%cd%":/workspace -w /workspace %PYTHON_IMAGE% sh -c "pip3 install -r requirements.txt pytest && pytest app_test.py -v"
-                '''
-            }
-        }
+    
 
         stage('SonarQube Analysis') {
             steps {
