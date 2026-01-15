@@ -48,12 +48,13 @@ pipeline {
             steps {
                 script {
                     bat """
-                    docker run --rm ^
-                      -v "%cd%":/zap/wrk/:rw ^
-                      -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py ^
-                      -t http://host.docker.internal:30001 ^
-                      -r zap_report.html
-                    """
+                        docker run --rm ^
+                        -v "%cd%":/zap/wrk/:rw ^
+                        -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py ^
+                        -t http://host.docker.internal:30001 ^
+                        -r zap_report.html ^
+                        -I 
+                        """
                 }
             }
             post {
