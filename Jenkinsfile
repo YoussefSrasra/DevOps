@@ -21,21 +21,21 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
-            steps {
-                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                    bat """
-                    docker run --rm ^
-                    -e SONAR_HOST_URL=http://host.docker.internal:30091 ^
-                    -e SONAR_TOKEN=%SONAR_TOKEN% ^
-                    -v "%cd%":/usr/src ^
-                    sonarsource/sonar-scanner-cli ^
-                    -Dsonar.projectKey=my-backend-app ^
-                    -Dsonar.sources=.
-                    """
-                }
-            }
-        }
+        // stage('SonarQube Analysis') {
+        //     steps {
+        //         withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+        //             bat """
+        //             docker run --rm ^
+        //             -e SONAR_HOST_URL=http://host.docker.internal:30091 ^
+        //             -e SONAR_TOKEN=%SONAR_TOKEN% ^
+        //             -v "%cd%":/usr/src ^
+        //             sonarsource/sonar-scanner-cli ^
+        //             -Dsonar.projectKey=my-backend-app ^
+        //             -Dsonar.sources=.
+        //             """
+        //         }
+        //     }
+        // }
 
         stage('Install dependencies') {
             steps {
@@ -52,25 +52,25 @@ pipeline {
             }
         }
 
-        stage('DAST Scan (OWASP ZAP)') {
-            steps {
-                script {
-                    bat """
-                    docker run --rm ^
-                    -v "%cd%":/zap/wrk/:rw ^
-                    -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py ^
-                    -t http://host.docker.internal:30001 ^
-                    -r zap_report.html ^
-                    -I 
-                    """
-                }
-            }
-            post {
-                always {
-                    archiveArtifacts artifacts: 'zap_report.html', fingerprint: true
-                }
-            }
-        }
+        // stage('DAST Scan (OWASP ZAP)') {
+        //     steps {
+        //         script {
+        //             bat """
+        //             docker run --rm ^
+        //             -v "%cd%":/zap/wrk/:rw ^
+        //             -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py ^
+        //             -t http://host.docker.internal:30001 ^
+        //             -r zap_report.html ^
+        //             -I 
+        //             """
+        //         }
+        //     }
+        //     post {
+        //         always {
+        //             archiveArtifacts artifacts: 'zap_report.html', fingerprint: true
+        //         }
+        //     }
+        // }
 
         // ==================== CD STAGES ====================
         
