@@ -12,6 +12,24 @@ pipeline {
                 checkout scm
             }
         }
+
+        stage('SonarQube Analysis') {
+            steps {
+                // Make sure the credential ID 'sonar-token' exists in Jenkins -> Credentials
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    bat """
+                    docker run --rm ^
+                    -e SONAR_HOST_URL=http://localhost:30091 ^
+                    -e SONAR_TOKEN=%SONAR_TOKEN% ^
+                    -v "%cd%":/usr/src ^
+                    sonarsource/sonar-scanner-cli ^
+                    -Dsonar.projectKey=python_link_shortener ^
+                    -Dsonar.sources=.
+                    """
+                }
+            }
+        }
+
         stage('Install dependencies') {
             steps {
                 bat '''
