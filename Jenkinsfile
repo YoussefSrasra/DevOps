@@ -2,11 +2,15 @@ pipeline {
     agent any
 
     environment {
-        IMGNAME = 'python_link_shortener'
-        PYTHON_IMAGE = 'python:3.11-slim'
+        // The name of your deployment in Kubernetes
+        DEPLOYMENT_NAME = 'devops-backend'
+        // The name of the image in your Docker Hub repository
+        IMGNAME = 'devops_project'
         DOCKER_REGISTRY = 'hadilt'
+        PYTHON_IMAGE = 'python:3.11-slim'
         IMAGE_TAG = "${BUILD_NUMBER}"
-        KUBE_NAMESPACE = 'production'
+        // Set to 'default' as per your previous kubectl output
+        KUBE_NAMESPACE = 'default' 
     }
 
     stages {
@@ -16,11 +20,8 @@ pipeline {
             }
         }
 
-    
-
         stage('SonarQube Analysis') {
             steps {
-                // Make sure the credential ID 'sonar-token' exists in Jenkins -> Credentials
                 withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                     bat """
                     docker run --rm ^
@@ -45,6 +46,7 @@ pipeline {
         
         stage('Build Docker Image') {
             steps {
+                // Building the local image
                 bat 'docker build -t %IMGNAME%:latest -t %IMGNAME%:%IMAGE_TAG% .'
             }
         }
@@ -53,13 +55,13 @@ pipeline {
             steps {
                 script {
                     bat """
-                        docker run --rm ^
-                        -v "%cd%":/zap/wrk/:rw ^
-                        -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py ^
-                        -t http://host.docker.internal:30001 ^
-                        -r zap_report.html ^
-                        -I 
-                        """
+                    docker run --rm ^
+                    -v "%cd%":/zap/wrk/:rw ^
+                    -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py ^
+                    -t http://host.docker.internal:30001 ^
+                    -r zap_report.html ^
+                    -I 
+                    """
                 }
             }
             post {
@@ -92,9 +94,10 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
+                    // Update the 'backend' container inside 'devops-backend' deployment
                     bat """
-                    kubectl set image deployment/%IMGNAME% %IMGNAME%=%DOCKER_REGISTRY%/%IMGNAME%:%IMAGE_TAG% -n %KUBE_NAMESPACE%
-                    kubectl rollout status deployment/%IMGNAME% -n %KUBE_NAMESPACE% --timeout=5m
+                    kubectl set image deployment/%DEPLOYMENT_NAME% backend=%DOCKER_REGISTRY%/%IMGNAME%:%IMAGE_TAG% -n %KUBE_NAMESPACE%
+                    kubectl rollout status deployment/%DEPLOYMENT_NAME% -n %KUBE_NAMESPACE% --timeout=5m
                     """
                 }
             }
@@ -104,8 +107,8 @@ pipeline {
             steps {
                 script {
                     bat """
-                    kubectl get pods -n %KUBE_NAMESPACE% -l app=%IMGNAME%
-                    kubectl get svc -n %KUBE_NAMESPACE% -l app=%IMGNAME%
+                    kubectl get pods -n %KUBE_NAMESPACE% -l app=%DEPLOYMENT_NAME%
+                    kubectl get svc -n %KUBE_NAMESPACE% -l app=%DEPLOYMENT_NAME%
                     """
                 }
             }
@@ -116,22 +119,21 @@ pipeline {
                 script {
                     bat """
                     timeout /t 20 /nobreak
-                    curl -f http://localhost:5000 || exit /b 1
+                    curl -f http://localhost:30001 || exit /b 1
                     """
                 }
             }
         }
-
     }
 
     post {
         success {
-            echo '✅ Pipeline succeeded! Application deployed successfully to Kubernetes.'
+            echo '✅ Pipeline succeeded! Application deployed to Kubernetes.'
         }
         failure {
             echo '❌ Pipeline failed! Attempting rollback...'
             script {
-                bat 'kubectl rollout undo deployment/%IMGNAME% -n %KUBE_NAMESPACE% || exit /b 0'
+                bat 'kubectl rollout undo deployment/%DEPLOYMENT_NAME% -n %KUBE_NAMESPACE% || exit /b 0'
             }
         }
         always {
