@@ -9,6 +9,7 @@ pipeline {
         DOCKER_REGISTRY = 'hadilt'
         PYTHON_IMAGE = 'python:3.11-slim'
         IMAGE_TAG = "${BUILD_NUMBER}"
+        KUBECONFIG = 'C:/Users/lenovo/.kube/config'
         // Set to 'default' as per your previous kubectl output
         KUBE_NAMESPACE = 'default' 
     }
