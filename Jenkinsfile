@@ -23,7 +23,7 @@ pipeline {
                     -e SONAR_TOKEN=%SONAR_TOKEN% ^
                     -v "%cd%":/usr/src ^
                     sonarsource/sonar-scanner-cli ^
-                    -Dsonar.projectKey=python_link_shortener ^
+                    -Dsonar.projectKey=my-bank-app ^
                     -Dsonar.sources=.
                     """
                 }
