@@ -19,15 +19,16 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                     sh """
-                    # Install Docker CLI manually inside the container
-                    apt-get update && apt-get install -y docker.io
+                    # Ensure Docker is ready
+                    docker.io --version || (apt-get update && apt-get install -y docker.io)
                     
-                    # Now run your command
                     docker run --rm \
-                      -e SONAR_HOST_URL=${SONAR_URL} \
-                      -e SONAR_TOKEN=${SONAR_TOKEN} \
-                      -v "\$(pwd)":/usr/src \
-                      sonarsource/sonar-scanner-cli -Dsonar.projectKey=python_link_shortener
+                    -e SONAR_HOST_URL=${SONAR_URL} \
+                    -e SONAR_TOKEN=${SONAR_TOKEN} \
+                    -v "\$(pwd):/usr/src" \
+                    sonarsource/sonar-scanner-cli \
+                    -Dsonar.projectKey=python_link_shortener \
+                    -Dsonar.sources=. 
                     """
                 }
             }
