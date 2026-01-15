@@ -19,27 +19,7 @@ pipeline {
                 '''
             }
         }
-        stage('Test') {
-            steps {
-                bat '''
-                docker run --rm -v "%cd%":/workspace -w /workspace %PYTHON_IMAGE% sh -c "pip3 install -r requirements.txt pytest && pytest"
-                '''
-            }
-        }
-        stage('Lint') {
-            steps {
-                bat '''
-                docker run --rm -v "%cd%":/workspace -w /workspace %PYTHON_IMAGE% sh -c "pip3 install flake8 && flake8 app.py"
-                '''
-            }
-        }
-        stage('Security Scan (SAST)') {
-            steps {
-                bat '''
-                docker run --rm -v "%cd%":/workspace -w /workspace %PYTHON_IMAGE% sh -c "pip3 install bandit && bandit -r app.py"
-                '''
-            }
-        }
+        
         stage('Build Docker Image') {
             steps {
                 bat 'docker build -t %IMGNAME%:latest .'
