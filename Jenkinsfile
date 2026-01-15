@@ -23,7 +23,7 @@ pipeline {
                     -e SONAR_TOKEN=%SONAR_TOKEN% ^
                     -v "%cd%":/usr/src ^
                     sonarsource/sonar-scanner-cli ^
-                    -Dsonar.projectKey=my-bankend-app ^
+                    -Dsonar.projectKey=my-backend-app ^
                     -Dsonar.sources=.
                     """
                 }
