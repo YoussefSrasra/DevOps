@@ -4,7 +4,7 @@ pipeline {
     environment {
         IMGNAME = 'python_link_shortener'
         PYTHON_IMAGE = 'python:3.11-slim'
-        // Using the K8s internal DNS name for SonarQube
+        // Pointing to your SonarQube service inside Kubernetes
         SONAR_URL = 'http://sonarqube.sonarqube.svc.cluster.local:9000'
     }
 
@@ -18,9 +18,16 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                    // Changed 'bat' to 'sh' and corrected the variable syntax
                     sh """
-                    docker run --rm -e SONAR_HOST_URL=${SONAR_URL} -e SONAR_TOKEN=${SONAR_TOKEN} -v "\$(pwd)":/usr/src sonarsource/sonar-scanner-cli -Dsonar.projectKey=python_link_shortener
+                    # Install Docker CLI manually inside the container
+                    apt-get update && apt-get install -y docker.io
+                    
+                    # Now run your command
+                    docker run --rm \
+                      -e SONAR_HOST_URL=${SONAR_URL} \
+                      -e SONAR_TOKEN=${SONAR_TOKEN} \
+                      -v "\$(pwd)":/usr/src \
+                      sonarsource/sonar-scanner-cli -Dsonar.projectKey=python_link_shortener
                     """
                 }
             }

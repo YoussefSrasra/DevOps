@@ -26,16 +26,29 @@ spec:
       containers:
       - name: jenkins
         image: jenkins/jenkins:lts
-        ports:
-        - containerPort: 8080
-        - containerPort: 50000
+        securityContext:
+          runAsUser: 0 
+        # --- ADD THIS START ---
+        env:
+          - name: GIT_CONFIG_COUNT
+            value: "1"
+          - name: GIT_CONFIG_KEY_0
+            value: "safe.directory"
+          - name: GIT_CONFIG_VALUE_0
+            value: "*"
+        # --- ADD THIS END ---
         volumeMounts:
         - name: jenkins-data
           mountPath: /var/jenkins_home
+        - name: docker-sock
+          mountPath: /var/run/docker.sock
       volumes:
       - name: jenkins-data
         persistentVolumeClaim:
           claimName: jenkins-pvc
+      - name: docker-sock
+        hostPath:
+          path: /var/run/docker.sock
 ---
 apiVersion: v1
 kind: Service
