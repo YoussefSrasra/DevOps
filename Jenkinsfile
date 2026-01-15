@@ -4,6 +4,9 @@ pipeline {
     environment {
         IMGNAME = 'python_link_shortener'
         PYTHON_IMAGE = 'python:3.11-slim'
+        DOCKER_REGISTRY = 'hadilt'
+        IMAGE_TAG = "${BUILD_NUMBER}"
+        KUBE_NAMESPACE = 'production'
     }
 
     stages {
@@ -42,7 +45,7 @@ pipeline {
         
         stage('Build Docker Image') {
             steps {
-                bat 'docker build -t %IMGNAME%:latest .'
+                bat 'docker build -t %IMGNAME%:latest -t %IMGNAME%:%IMAGE_TAG% .'
             }
         }
 
@@ -66,5 +69,74 @@ pipeline {
             }
         }
 
+        // ==================== CD STAGES ====================
+        
+        stage('Push to Docker Registry') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', 
+                                                       usernameVariable: 'DOCKER_USER', 
+                                                       passwordVariable: 'DOCKER_PASS')]) {
+                        bat '''
+                        docker login -u %DOCKER_USER% -p %DOCKER_PASS%
+                        docker tag %IMGNAME%:latest %DOCKER_REGISTRY%/%IMGNAME%:latest
+                        docker tag %IMGNAME%:%IMAGE_TAG% %DOCKER_REGISTRY%/%IMGNAME%:%IMAGE_TAG%
+                        docker push %DOCKER_REGISTRY%/%IMGNAME%:latest
+                        docker push %DOCKER_REGISTRY%/%IMGNAME%:%IMAGE_TAG%
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    bat """
+                    kubectl set image deployment/%IMGNAME% %IMGNAME%=%DOCKER_REGISTRY%/%IMGNAME%:%IMAGE_TAG% -n %KUBE_NAMESPACE%
+                    kubectl rollout status deployment/%IMGNAME% -n %KUBE_NAMESPACE% --timeout=5m
+                    """
+                }
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                script {
+                    bat """
+                    kubectl get pods -n %KUBE_NAMESPACE% -l app=%IMGNAME%
+                    kubectl get svc -n %KUBE_NAMESPACE% -l app=%IMGNAME%
+                    """
+                }
+            }
+        }
+
+        stage('Smoke Tests') {
+            steps {
+                script {
+                    bat """
+                    timeout /t 20 /nobreak
+                    curl -f http://localhost:5000 || exit /b 1
+                    """
+                }
+            }
+        }
+
+    }
+
+    post {
+        success {
+            echo '✅ Pipeline succeeded! Application deployed successfully to Kubernetes.'
+        }
+        failure {
+            echo '❌ Pipeline failed! Attempting rollback...'
+            script {
+                bat 'kubectl rollout undo deployment/%IMGNAME% -n %KUBE_NAMESPACE% || exit /b 0'
+            }
+        }
+        always {
+            bat 'docker logout || exit /b 0'
+            cleanWs()
+        }
     }
 }
