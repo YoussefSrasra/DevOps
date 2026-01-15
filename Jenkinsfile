@@ -5,7 +5,7 @@ pipeline {
         IMGNAME = 'python_link_shortener'
         PYTHON_IMAGE = 'python:3.11-slim'
         // Pointing to your SonarQube service inside Kubernetes
-        SONAR_URL = 'http://sonarqube.sonarqube.svc.cluster.local:9000'
+        SONAR_URL = 'http://host.docker.internal:30091'
     }
 
     stages {
